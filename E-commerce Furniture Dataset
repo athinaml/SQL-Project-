@@ -1,0 +1,70 @@
+-- Remove '$' from originalPrice
+UPDATE ecommerce_furniture_dataset_2024
+SET originalPrice = REPLACE(originalPrice, '$', '');
+
+-- Remove '$' from price
+UPDATE ecommerce_furniture_dataset_2024
+SET price = REPLACE(price, '$', '');	
+
+-- Remove ',' from originalPrice
+UPDATE ecommerce_furniture_dataset_2024
+SET originalPrice = REPLACE(originalPrice, ',', '');	
+
+-- Modify originalPrice column to DECIMAL
+ALTER TABLE ecommerce_furniture_dataset_2024
+MODIFY COLUMN originalPrice DECIMAL(10, 2);
+
+-- Modify price column to DECIMAL
+ALTER TABLE ecommerce_furniture_dataset_2024
+MODIFY COLUMN price DECIMAL(10, 2);
+
+-- Add discount column
+ALTER TABLE ecommerce_furniture_dataset_2024
+ADD COLUMN discount DECIMAL(10, 2); 
+
+-- Calculate discount for each product
+UPDATE ecommerce_furniture_dataset_2024
+SET discount = CASE
+                 WHEN originalPrice > 0 THEN (originalPrice - price)
+                 ELSE 0  
+               END;
+
+-- Count of products with a discount
+SELECT COUNT(*) AS products_with_discount
+FROM ecommerce_furniture_dataset_2024
+WHERE discount > 0;
+
+-- Calculate total revenue
+SELECT SUM(price * sold) AS total_revenue 
+FROM ecommerce_furniture_dataset_2024;
+
+-- Calculate average price of products
+SELECT AVG(price)
+FROM ecommerce_furniture_dataset_2024;
+
+-- Create table for products with price greater than 100
+CREATE TABLE products_sold_filtered_by_price AS
+SELECT productTitle, price, sold		
+FROM ecommerce_furniture_dataset_2024	
+WHERE price > 100;
+
+-- Create table for products sold more than 15 times
+CREATE TABLE products_sold_filtered AS
+SELECT productTitle, price, sold	
+FROM ecommerce_furniture_dataset_2024
+WHERE sold > 15;
+
+-- Create joined_products table
+CREATE TABLE joined_products (	
+    ID INT AUTO_INCREMENT NOT NULL,
+    productTitle VARCHAR(250) NOT NULL,
+    price DECIMAL (10, 2) NOT NULL,
+    sold INT NOT NULL,		
+    PRIMARY KEY(ID)
+);
+
+-- Insert joined data into joined_products table
+INSERT INTO joined_products (productTitle, price, sold)
+SELECT products_sold_filtered_by_price.productTitle, products_sold_filtered_by_price.price, products_sold_filtered.sold
+FROM products_sold_filtered_by_price							
+INNER JOIN products_sold_filtered ON products_sold_filtered_by_price.productTitle = products_sold_filtered.productTitle;
